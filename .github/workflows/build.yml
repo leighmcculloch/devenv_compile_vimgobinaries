@@ -1,34 +1,33 @@
-name: CI
+name: build
 
 on:
   schedule:
     - cron:  '0 12 * * *'
   push:
     branches:
-    - master
+      - master
 
 jobs:
   build:
     runs-on: ubuntu-18.04
     steps:
-    - uses: actions/checkout@v1
-    - name: Build Binaries
-      run: make bin
-    - id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.sha }}
-        release_name: Release $GITHUB_ACTION
-        draft: false
-        prerelease: false
-    - run: tar -czvf bin.tar.gz -C bin .
-    - uses: actions/upload-release-asset@v1.0.1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./bin.tar.gz
-        asset_name: bin.tar.gz
-        asset_content_type: application/gzip
+      - uses: actions/checkout@v1
+      - run: make bin
+      - run: tar -czvf vimgobinaries.tar.gz -C bin .
+      - run: echo "::set-output name=version::v$(date +%Y%m%d)"
+        id: release
+      - uses: actions/create-release@v1
+        id: create_release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.release.outputs.version }}
+          release_name: ${{ steps.release.outputs.version }}
+      - uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./vimgobinaries.tar.gz
+          asset_name: vimgobinaries.tar.gz
+          asset_content_type: application/gzip
